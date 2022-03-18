@@ -1,0 +1,139 @@
+##
+# for every row in the matrix
+# construct a string of the column values 
+# ... join with "," characters
+# if a elemenet is the last value in the row,
+# ... append a new line character to the row string
+# return the string
+#--
+# args
+#--
+# data_mat: nxm matrix
+#--
+# returns: csv_str_r: the matrix <data_mat> as a csv string
+##
+function mat_to_csv( dat_mat ){
+    s = size( dat_mat );
+    row_num = s(1);
+    col_num = s(2);
+    clear(s);
+    csv_str = cell( row_num );
+    if( row_num > 1 )
+    {
+        for( row_idx = 1:row_num ){
+            csv_str{ row_idx } = num2str( dat_mat(row_idx,1) );
+            if( col_num > 1 )
+            {
+                for( col_idx = 2:col_num )
+                {
+                    csv_str{ row_idx } = csv_str{ row_idx } + "," + num2str( dat_mat(row_idx,col_idx) );
+                }  
+            }
+        }      
+    }
+    else
+    {
+        csv_str{ 1 } = num2str( dat_mat(1,1) );
+        if( col_num > 1 )
+        {
+            for( col_idx = 2:col_num )
+            {
+                csv_str{ 1 } = csv_str{ 1 } + "," + num2str( dat_mat(1,col_idx) );
+            }  
+        }    
+    }
+    
+    csv_str_r = "";    
+    
+    len = length(csv_str);
+    if( len > 1 )
+    {
+        for( idx = 1 : len - 1 ){
+            csv_str_r = csv_str_r + csv_str{ idx } + "\n";    
+        }
+        csv_str_r = csv_str_r + csv_str{ len };    
+    }
+    else{
+        csv_str_r = csv_str{1};    
+    }   
+    return csv_str_r;
+}
+
+##
+# take in matrix data and a tag
+# call function <backup_csv> to create a backup of an existing resuslts file
+# call function <mat_to_csv> to convert the matrix data into a string
+# split the string at the new line characters
+# for every line in the string buffer <csv_str>, write the string into a file
+# ... located in the reuslts folder tagged with the argument <tag> 
+#--
+#args
+#--
+# mat_data: a nxm matrix 
+# tag: a string to name the data file
+#--
+# returns: none
+##
+function write_to_csv( mat_data, tag ){
+    backup_csv( tag );
+    csv_str = mat_to_csv( mat_data );
+    csv_split = splitstring(csv_str, endl); 
+    len = length( csv_split );
+    system("echo " + csv_split{ 1 } + " > results/" + tag + ".csv");
+    if(len > 1)
+    {
+        for( idx = 2 : len )
+        {
+            system("echo " + csv_split{ idx } + " >> results/" + tag + ".csv");     
+        }    
+    }
+    
+}
+
+##
+# check if there exists a results and backup folder in the project directory
+# if not, function creates them 
+# then check if there exists a file in the reults folder with the same name as the current tag
+# if so reads the existing file into a backup file taged with the system time
+#--
+# args:
+#--
+# tag: a string used to name the file
+#--
+# returns: none
+##
+function backup_csv( tag )
+{
+    system("if [ ! -d \"results\" ]; then mkdir \"results\"; fi;");
+    system("if [ ! -d \"backup\" ]; then mkdir \"backup\"; fi;");
+    system("if [ -f \"results/" + tag + ".csv\" ]; then cat results/" + tag + ".csv > backup/" + tag + "_backup_$(date +\"%Y_%m_%d_%H_%M_%S\").csv; fi;");
+}
+
+##
+# function used to add headings to an existing results file
+# results files is saved as a new file with an appened "_w_head"
+#--
+# args
+#--
+# headings: 1xn cell type containing the heading strings
+# tag: name of the results file headings are being applied to
+#--
+# returns: none
+##
+function add_head_to_csv( headings, tag )
+{
+    head_str = "";
+    len = length(headings);
+    if( len > 1 )
+    {
+       for( i = 1 : length(headings) - 1)
+        {
+            head_str = head_str + headings{ i } + ","; 
+        } 
+    }
+    head_str = head_str + headings{ len } +  "\\n";
+    
+    system("echo \"" + head_str + "\" > tmp");
+    system("cat tmp results/" + tag + ".csv | sed '/^$/d' > results/" + tag + "_w_head.csv");
+    system("rm tmp");
+}
